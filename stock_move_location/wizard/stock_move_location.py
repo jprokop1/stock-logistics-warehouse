@@ -8,6 +8,8 @@ from itertools import groupby
 
 from odoo import api, fields, models
 from odoo.fields import first
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class StockMoveLocationWizard(models.TransientModel):
@@ -15,7 +17,7 @@ class StockMoveLocationWizard(models.TransientModel):
     _description = "Wizard move location"
 
     def _get_default_picking_type_id(self):
-        company_id = self.env.context.get("company_id") or self.env.user.company_id.id
+        company_id = self.env.context.get("company_id") or self.env.company.id
         return (
             self.env["stock.picking.type"]
             .search(
@@ -150,13 +152,14 @@ class StockMoveLocationWizard(models.TransientModel):
         for line in self.stock_move_location_line_ids:
             line.destination_location_id = self.destination_location_id
 
+
     def _clear_lines(self):
         self.stock_move_location_line_ids = False
 
     def _get_locations_domain(self):
         return [
             "|",
-            ("company_id", "=", self.env.user.company_id.id),
+            ("company_id", "=", self.env.company.id),
             ("company_id", "=", False),
         ]
 
@@ -190,7 +193,8 @@ class StockMoveLocationWizard(models.TransientModel):
     def _get_move_values(self, picking, lines):
         # locations are same for the products
         location_from_id = lines[0].origin_location_id.id
-        location_to_id = lines[0].destination_location_id.id
+        location_to_id = self.destination_location_id.id #lines[0].destination_location_id.id
+#        _logger.info(" *********** get_move_values : **************** " + str(lines[0].destination_location_id.id) + " **** from: " + str(location_from_id) + " **** dest self: " + str(self.destination_location_id))
         product = lines[0].product_id
         product_uom_id = lines[0].product_uom_id.id
         qty = sum(x.move_quantity for x in lines)
@@ -246,6 +250,7 @@ class StockMoveLocationWizard(models.TransientModel):
         return moves_to_reassign
 
     def action_move_location(self):
+        _logger.info(" *********** action_move_location : **************** " + str(self.destination_location_id) + "*** company_id " + str(self.env.user.company_id.id))
         self.ensure_one()
         if not self.picking_id:
             picking = self._create_picking()

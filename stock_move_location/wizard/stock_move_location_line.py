@@ -5,7 +5,8 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 from odoo.tools import float_compare
-
+import logging
+_logger = logging.getLogger(__name__)
 
 class StockMoveLocationWizardLine(models.TransientModel):
     _name = "wiz.stock.move.location.line"
@@ -99,8 +100,10 @@ class StockMoveLocationWizardLine(models.TransientModel):
         location_dest_id = (
             self.move_location_wizard_id.apply_putaway_strategy
             and self.destination_location_id.get_putaway_strategy(self.product_id).id
-            or self.destination_location_id.id
+            or move.location_dest_id.id #self.destination_location_id.id
         )
+#        _logger.info(" *********** move_lines : **************** " + str(location_dest_id) + " **** from self: " + str(self.destination_location_id) + " **** lines: " + str(move.location_dest_id))
+
         qty_todo, qty_done = self._get_available_quantity()
         return {
             "product_id": self.product_id.id,
